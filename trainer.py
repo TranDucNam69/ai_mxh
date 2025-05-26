@@ -161,13 +161,27 @@ class ModelTrainer:
         _, accuracy, predictions, labels = self.validate_epoch(test_loader)
         
         print(f"Test Accuracy: {accuracy:.4f}")
+        
+        # Tìm các class thực tế có trong dữ liệu
+        unique_labels = sorted(list(set(labels + predictions)))
+        target_names = [Config.LABEL_MAPPING[i] for i in unique_labels]
+        
         print("\nClassification Report:")
         print(classification_report(labels, predictions, 
-                                  target_names=[Config.LABEL_MAPPING[i] for i in range(Config.NUM_CLASSES)]))
+                                  labels=unique_labels,
+                                  target_names=target_names,
+                                  zero_division=0))
         
-        # Confusion Matrix
-        cm = confusion_matrix(labels, predictions)
+        # Confusion Matrix - sử dụng tất cả các class có thể có
+        cm = confusion_matrix(labels, predictions, labels=list(range(Config.NUM_CLASSES)))
         self.plot_confusion_matrix(cm)
+        
+        # In phân bố class trong test set
+        print(f"\nPhân bố class trong test set:")
+        for label in unique_labels:
+            count = labels.count(label)
+            percentage = count / len(labels) * 100
+            print(f"  {Config.LABEL_MAPPING[label]}: {count} mẫu ({percentage:.1f}%)")
         
         return accuracy, predictions, labels
     

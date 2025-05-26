@@ -130,40 +130,99 @@ def test_onnx_inference():
             print(f"✗ ONNX inference test failed: {e}")
 
 def create_sample_data():
-    """Tạo dữ liệu mẫu để test"""
+    """Tạo dữ liệu mẫu để test - đảm bảo có đủ cả 3 class"""
     print("\n=== TẠO DỮ LIỆU MẪU ===")
     
     import pandas as pd
     from PIL import Image
+    import numpy as np
     
-    # Tạo CSV mẫu
+    # Tạo dữ liệu cân bằng hơn - mỗi class có ít nhất 10 samples
     sample_data = {
         'text': [
+            # Class 0: Lành mạnh (10 samples)
             'Hôm nay thật là một ngày tuyệt vời!',
-            'Tôi không đồng ý với quan điểm này',
-            'Đây là nội dung không phù hợp và độc hại',
             'Cảm ơn mọi người đã chia sẻ',
-            'Bài viết này gây tranh cãi nhưng có thể thảo luận'
+            'Chúc mọi người một ngày tốt lành',
+            'Rất vui được gặp gỡ mọi người',
+            'Tôi yêu gia đình mình',
+            'Học tập chăm chỉ để có tương lai tốt',
+            'Cùng nhau xây dựng cộng đồng tích cực',
+            'Hãy luôn giữ tinh thần lạc quan',
+            'Chia sẻ kiến thức là điều tuyệt vời',
+            'Mọi người đều có quyền được hạnh phúc',
+            
+            # Class 1: Gây tranh cãi (10 samples)
+            'Tôi không đồng ý với quan điểm này',
+            'Bài viết này gây tranh cãi nhưng có thể thảo luận',
+            'Có lẽ chúng ta nên xem xét kỹ hơn',
+            'Điều này có thể gây hiểu lầm',
+            'Quan điểm này cần được thảo luận thêm',
+            'Tôi có ý kiến khác về vấn đề này',
+            'Vấn đề này phức tạp hơn chúng ta nghĩ',
+            'Cần có thêm bằng chứng để chứng minh',
+            'Nhiều người có quan điểm khác nhau',
+            'Đây là chủ đề nhạy cảm cần cân nhắc',
+            
+            # Class 2: Độc hại (10 samples)
+            'Đây là nội dung không phù hợp và độc hại',
+            'Tôi ghét tất cả mọi thứ',
+            'Thế giới này thật tệ hại',
+            'Không ai hiểu tôi cả',
+            'Tôi muốn làm hại người khác',
+            'Mọi người đều xấu và ác',
+            'Tôi không thể chịu đựng được nữa',
+            'Hãy làm tổn thương những kẻ thù',
+            'Bạo lực là giải pháp duy nhất',
+            'Tôi muốn phá hủy mọi thứ'
         ],
-        'image_path': [
-            'sample1.jpg', 'sample2.jpg', 'sample3.jpg', 'sample4.jpg', 'sample5.jpg'
-        ],
-        'label': [0, 1, 2, 0, 1]  # 0: Lành mạnh, 1: Gây tranh cãi, 2: Độc hại
+        'image_path': [],
+        'label': []
     }
     
-    df = pd.DataFrame(sample_data)
+    # Tạo image paths và labels tương ứng
+    for i in range(30):  # 30 samples total
+        sample_data['image_path'].append(f'sample_{i+1:02d}.jpg')
+        if i < 10:
+            sample_data['label'].append(0)  # Lành mạnh
+        elif i < 20:
+            sample_data['label'].append(1)  # Gây tranh cãi
+        else:
+            sample_data['label'].append(2)  # Độc hại
+    
+    # Trộn dữ liệu để tạo sự ngẫu nhiên
+    indices = list(range(30))
+    np.random.seed(42)  # Để có thể reproduce
+    np.random.shuffle(indices)
+    
+    shuffled_data = {
+        'text': [sample_data['text'][i] for i in indices],
+        'image_path': [sample_data['image_path'][i] for i in indices],
+        'label': [sample_data['label'][i] for i in indices]
+    }
+    
+    df = pd.DataFrame(shuffled_data)
     df.to_csv(Config.CSV_PATH, index=False, encoding='utf-8')
     
-    # Tạo ảnh mẫu
+    # Tạo ảnh mẫu với màu sắc khác nhau cho mỗi class
     Config.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-    colors = ['white', 'lightblue', 'lightcoral', 'lightgreen', 'lightyellow']
     
-    for i, color in enumerate(colors, 1):
+    for i in range(30):
+        # Màu sắc tương ứng với class
+        original_idx = indices[i]
+        if original_idx < 10:
+            color = 'lightgreen'  # Lành mạnh - xanh lá
+        elif original_idx < 20:
+            color = 'lightyellow'  # Gây tranh cãi - vàng
+        else:
+            color = 'lightcoral'  # Độc hại - đỏ
+            
         image = Image.new('RGB', Config.IMAGE_SIZE, color=color)
-        image.save(Config.IMAGES_DIR / f'sample{i}.jpg')
+        image.save(Config.IMAGES_DIR / f'sample_{i+1:02d}.jpg')
     
     print(f"✓ Đã tạo dữ liệu mẫu tại {Config.CSV_PATH}")
-    print(f"✓ Đã tạo {len(colors)} ảnh mẫu tại {Config.IMAGES_DIR}")
+    print(f"✓ Đã tạo 30 ảnh mẫu tại {Config.IMAGES_DIR}")
+    print(f"✓ Phân bố: 10 mẫu cho mỗi class (Lành mạnh, Gây tranh cãi, Độc hại)")
 
 def main():
     """Hàm chính"""
